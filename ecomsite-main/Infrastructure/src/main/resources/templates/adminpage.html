@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+    <h2><a href="/">Store page</a></h2>
+</head>
+<body>
+    <h1>User Management</h1>
+    <table id="userTable" border="1">
+        <thead>
+            <tr>
+                <th>User ID</th>
+                <th>Name</th>
+                <th>Password</th>
+                <th>Email</th>    
+                <th>Is Admin</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="userTableBody"></tbody>
+    </table>
+    
+    <script>
+        // Function to fetch user data from the /users endpoint
+        async function fetchUsers() {
+            try {
+                const response = await fetch('http://localhost:8080/users');
+                const users = await response.json();
+                return users;
+            } catch (error) {
+                console.error('Error fetching users:', error);
+                return [];
+            }
+        }
+    
+        // Function to populate the table with user data
+        async function populateUserTable() {
+            const users = await fetchUsers();
+            const userTableBody = document.getElementById('userTableBody');
+            userTableBody.innerHTML = ''; // Clear existing table rows
+            users.forEach(user => {
+                const row = `
+                    <tr>
+                        <td>${user.user_id}</td>
+                        <td>${user.name}</td>
+                        <td>${user.password}</td>
+                        <td>${user.email}</td>
+                        <td>${user.is_admin}</td>
+                        <td>
+                            
+                            <button onclick="editUser(${user.user_id})">Edit</button>
+                            <button onclick="deleteUser(${user.user_id})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+                userTableBody.innerHTML += row;
+            });
+        }
+        
+        // Function to edit a user
+        function editUser(userId) {
+            const name = prompt('Enter new name:');
+            const password = prompt('Enter new password:');
+            const email = prompt('Enter new email:');
+            const isAdminConfirmed = confirm('Is admin?');
+            const isAdmin = isAdminConfirmed ? true : false;
+        
+            const updatedUser = { name, password, email, isAdmin };
+        
+            fetch(`http://localhost:8080/users/${userId}`, {
+                method: 'PUT', // Changed to PUT
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedUser)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log(data);
+                populateUserTable();
+            })
+            .catch(error => console.error('Error:', error));
+        }
+        
+        
+        // Function to delete a user
+        function deleteUser(userId) {
+            fetch(`http://localhost:8080/users/delete/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log(data);
+                populateUserTable();
+            })
+            .catch(error => console.error('Error:', error));
+        }
+        
+        
+        // Call the function to populate the table when the page loads
+        populateUserTable();
+    </script>
+</body>
+</html>
